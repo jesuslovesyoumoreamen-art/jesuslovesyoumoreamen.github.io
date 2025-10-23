@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Trail - JELVIN POS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('Service Worker registered'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #0f172a;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --light: #f8fafc;
+      --dark: #0f172a;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-600: #475569;
+      --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--danger), #dc2626);
+      color: white;
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo h1 {
+      font-weight: 800;
+      font-size: 1.75rem;
+      letter-spacing: -0.025em;
+    }
+
+    .live-time {
+      font-size: 1.125rem;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+
+    .back-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: var(--transition);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(-2px);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .page-header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.025em;
+    }
+
+    .page-header p {
+      color: var(--gray-600);
+      font-size: 1.125rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .filters-section {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 2.5rem;
+    }
+
+    .filters-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 2px solid var(--gray-100);
+    }
+
+    .filters-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .filter-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 0.95rem;
+    }
+
+    .filter-control {
+      padding: 0.875rem 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 1rem;
+      font-size: 1rem;
+      transition: var(--transition);
+      background: white;
+    }
+
+    .filter-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .apply-filters {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .btn {
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1.125rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: var(--transition);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-export {
+      background: linear-gradient(135deg, var(--accent), #d97706);
+      color: white;
+    }
+
+    .btn-export:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.4);
+    }
+
+    .reports-section {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+    }
+
+    .reports-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 2px solid var(--gray-100);
+    }
+
+    .reports-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border-radius: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 900px;
+    }
+
+    th {
+      background: var(--gray-100);
+      padding: 1.25rem 1.5rem;
+      text-align: left;
+      font-weight: 700;
+      color: var(--dark);
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: var(--gray-100);
+    }
+
+    .action-edit { color: var(--warning); font-weight: bold; }
+    .action-delete { color: var(--danger); font-weight: bold; }
+    .action-add { color: var(--success-dark); font-weight: bold; }
+
+    .no-data {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--gray-600);
+      font-style: italic;
+      font-size: 1.125rem;
+    }
+
+    @media (max-width: 768px) {
+      .header { padding: 1.25rem 1.5rem; }
+      .container { margin: 1.5rem auto; padding: 0 1rem; }
+      .page-header h1 { font-size: 2rem; }
+      .page-header p { font-size: 1rem; }
+      .filters-grid { grid-template-columns: 1fr; }
+      .apply-filters { flex-direction: column; align-items: center; }
+      .btn { font-size: 1rem; padding: 0.75rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <i class="fas fa-clipboard-list"></i>
+      <h1>Audit Trail</h1>
+    </div>
+    <div class="live-time" id="liveTime">Loading...</div>
+    <a href="dashboard.html" class="back-btn">
+      <i class="fas fa-arrow-left"></i> Dashboard
+    </a>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1><i class="fas fa-shield-alt"></i> System Audit Log</h1>
+      <p>Monitor all cashier activities and system changes (visible only to admin)</p>
+    </div>
+
+    <div class="filters-section">
+      <div class="filters-header">
+        <i class="fas fa-filter"></i>
+        <h2>Filter Audit Log</h2>
+      </div>
+      
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label for="auditPeriod">Time Period</label>
+          <select id="auditPeriod" class="filter-control">
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="quarter">This Quarter</option>
+            <option value="year">This Year</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="auditUser">User</label>
+          <select id="auditUser" class="filter-control">
+            <option value="all">All Users</option>
+            <!-- Will be populated dynamically -->
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="auditAction">Action Type</label>
+          <select id="auditAction" class="filter-control">
+            <option value="all">All Actions</option>
+            <option value="edit">Edit</option>
+            <option value="delete">Delete</option>
+            <option value="add">Add</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="apply-filters">
+        <button class="btn btn-export" onclick="exportAuditLog()">
+          <i class="fas fa-file-export"></i> Export CSV
+        </button>
+        <button class="btn btn-primary" onclick="loadAuditLog()">
+          <i class="fas fa-sync-alt"></i> Apply Filters
+        </button>
+      </div>
+    </div>
+
+    <div class="reports-section">
+      <div class="reports-header">
+        <i class="fas fa-list"></i>
+        <h2>System Activity</h2>
+      </div>
+      
+      <div class="table-container">
+        <table id="auditTable">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Item/Record</th>
+              <th>Details</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // UNIVERSAL SESSION VALIDATION with improved error handling
+    function validateSession() {
+      const currentShopId = sessionStorage.getItem('currentShopId');
+      const currentUserRole = sessionStorage.getItem('currentUserRole');
+      const currentUserEmail = sessionStorage.getItem('currentUserEmail');
+      const currentCurrency = sessionStorage.getItem('currentCurrency');
+      
+      if (!currentShopId || !currentUserRole || !currentUserEmail || !currentCurrency) {
+        alert('Please log in first.');
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      let shopData = null;
+      try {
+        shopData = JSON.parse(localStorage.getItem(currentShopId));
+      } catch (e) {
+        console.error('Failed to parse shop data:', e);
+        alert('Shop data is corrupted. Please log in again.');
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      if (!shopData) {
+        alert('Shop data not found. Please log in again.');
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      window.currentShopId = currentShopId;
+      window.currentUserRole = currentUserRole;
+      window.currentUserEmail = currentUserEmail;
+      window.currentCurrency = currentCurrency;
+      window.shopData = shopData;
+      
+      // 🔒 RESTRICT AUDIT TRAIL TO ADMIN ONLY
+      if (window.currentUserRole !== 'admin') {
+        window.location.href = 'dashboard.html';
+      }
+      
+      return true;
+    }
+    
+    function saveShopData() {
+      try {
+        localStorage.setItem(window.currentShopId, JSON.stringify(window.shopData));
+      } catch (e) {
+        console.error('Failed to save shop data:', e);
+        alert('Failed to save data. Please contact support.');
+      }
+    }
+    
+    function getCurrencySymbol() {
+      return window.currentCurrency || '₵';
+    }
+    
+    function addAuditLog(user, action, itemType, itemName, details) {
+      const auditLog = window.shopData.auditLog || [];
+      
+      auditLog.push({
+        timestamp: new Date().toISOString(),
+        user: user,
+        action: action,
+        itemType: itemType,
+        itemName: itemName,
+        details: details,
+        ipAddress: '127.0.0.1'
+      });
+      
+      window.shopData.auditLog = auditLog;
+      saveShopData(); // ✅ FIXED: Actually save the updated log
+    }
+    
+    if (!validateSession()) {
+      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:1.5rem;color:red;">Session expired. Redirecting...</div>';
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
+    } else {
+      // Initialize data AFTER validation
+      let auditLog = window.shopData.auditLog || [];
+      window.shopData.auditLog = auditLog; // Ensure it exists
+
+      // Live time (Accra)
+      function updateClock() {
+        const now = new Date();
+        const options = { 
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          timeZone: 'Africa/Accra'
+        };
+        document.getElementById('liveTime').innerText = now.toLocaleString('en-GB', options);
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // Load audit log
+      function loadAuditLog() {
+        let auditLog = window.shopData.auditLog || [];
+        const period = document.getElementById('auditPeriod').value;
+        const user = document.getElementById('auditUser').value;
+        const action = document.getElementById('auditAction').value;
+        const now = new Date();
+
+        let startDate = new Date(0); // All time
+        let endDate = new Date();
+
+        if (period === 'today') {
+          startDate = getStartOfDay(now);
+        } else if (period === 'week') {
+          startDate = getStartOfWeek(now);
+        } else if (period === 'month') {
+          startDate = getStartOfMonth(now);
+        } else if (period === 'quarter') {
+          startDate = getStartOfQuarter(now);
+        } else if (period === 'year') {
+          startDate = getStartOfYear(now);
+        }
+
+        let filtered = auditLog.filter(record => {
+          const recordDate = new Date(record.timestamp);
+          const matchesPeriod = recordDate >= startDate && recordDate <= endDate;
+          const matchesUser = user === 'all' || record.user === user;
+          const matchesAction = action === 'all' || record.action === action;
+          return matchesPeriod && matchesUser && matchesAction;
+        });
+
+        // Sort by date (newest first)
+        filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        const tbody = document.querySelector('#auditTable tbody');
+        tbody.innerHTML = '';
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="no-data">No audit records found.</td></tr>`;
+          return;
+        }
+
+        filtered.forEach(record => {
+          const formattedDate = new Date(record.timestamp).toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          const actionClass = `action-${record.action}`;
+          const formattedAction = record.action.charAt(0).toUpperCase() + record.action.slice(1);
+          
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${formattedDate}</td>
+            <td>${record.user}</td>
+            <td class="${actionClass}">${formattedAction}</td>
+            <td>${record.itemType}: ${record.itemName}</td>
+            <td>${record.details}</td>
+            <td>${record.ipAddress || 'Local'}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        // Populate user filter dropdown
+        populateUserFilter(auditLog);
+      }
+
+      function populateUserFilter(auditLog) {
+        const userSelect = document.getElementById('auditUser');
+        const users = [...new Set(auditLog.map(record => record.user))];
+        
+        // Clear existing options (except "All Users")
+        while (userSelect.options.length > 1) {
+          userSelect.remove(1);
+        }
+        
+        users.forEach(user => {
+          const option = document.createElement('option');
+          option.value = user;
+          option.textContent = user;
+          userSelect.appendChild(option);
+        });
+      }
+
+      // Date helpers
+      function getStartOfDay(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+
+      function getStartOfWeek(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return getStartOfDay(new Date(d.setDate(diff)));
+      }
+
+      function getStartOfMonth(date) {
+        const d = new Date(date);
+        return getStartOfDay(new Date(d.getFullYear(), d.getMonth(), 1));
+      }
+
+      function getStartOfQuarter(date) {
+        const d = new Date(date);
+        const quarter = Math.floor(d.getMonth() / 3);
+        return getStartOfDay(new Date(d.getFullYear(), quarter * 3, 1));
+      }
+
+      function getStartOfYear(date) {
+        const d = new Date(date);
+        return getStartOfDay(new Date(d.getFullYear(), 0, 1));
+      }
+
+      // Export audit log
+      function exportAuditLog() {
+        const auditLog = window.shopData.auditLog || [];
+        if (auditLog.length === 0) {
+          alert('No audit data to export!');
+          return;
+        }
+        
+        const exportData = auditLog.map(record => ({
+          Date: new Date(record.timestamp).toLocaleString('en-GB'),
+          User: record.user,
+          Action: record.action,
+          Item: `${record.itemType}: ${record.itemName}`,
+          Details: record.details,
+          IPAddress: record.ipAddress || 'Local'
+        }));
+        
+        const csv = convertToCSV(exportData);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'jelvin-pos-audit-log.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      // Convert to CSV
+      function convertToCSV(objArray) {
+        const array = typeof objArray !== 'object' ? JSON.parse(objArray) : objArray;
+        let str = '';
+
+        // Headers
+        const headers = Object.keys(array[0]);
+        str += headers.join(',') + '\r\n';
+
+        // Data
+        for (let i = 0; i < array.length; i++) {
+          let line = '';
+          for (let index in array[i]) {
+            if (line !== '') line += ',';
+            // Properly escape and quote fields
+            let value = String(array[i][index]);
+            // Escape double quotes by doubling them
+            value = value.replace(/"/g, '""');
+            // Quote the field if it contains a comma, newline, or double quote
+            if (/[",\n\r]/.test(value)) {
+              value = `"${value}"`;
+            }
+            line += value;
+          }
+          str += line + '\r\n';
+        }
+        return str;
+      }
+
+      // Initialize
+      loadAuditLog();
+    }
+  </script>
+</body>
+</html>

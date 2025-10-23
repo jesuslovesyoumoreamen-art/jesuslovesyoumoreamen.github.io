@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reminders - JELVIN POS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('Service Worker registered'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #0f172a;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --light: #f8fafc;
+      --dark: #0f172a;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-600: #475569;
+      --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      color: white;
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo h1 {
+      font-weight: 800;
+      font-size: 1.75rem;
+      letter-spacing: -0.025em;
+    }
+
+    .live-time {
+      font-size: 1.125rem;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+
+    .back-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: var(--transition);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(-2px);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .page-header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.025em;
+    }
+
+    .page-header p {
+      color: var(--gray-600);
+      font-size: 1.125rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .reminders-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .reminders-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 2px solid var(--gray-100);
+    }
+
+    .card-header i {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.25rem;
+    }
+
+    .card-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 0.95rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 1rem;
+      font-size: 1rem;
+      transition: var(--transition);
+      background: var(--light);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn {
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1.125rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: var(--transition);
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border-radius: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 800px;
+    }
+
+    th {
+      background: var(--gray-100);
+      padding: 1.25rem 1.5rem;
+      text-align: left;
+      font-weight: 700;
+      color: var(--dark);
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: var(--gray-100);
+    }
+
+    .stock-low {
+      color: var(--danger);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .stock-low i {
+      font-size: 0.875rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .edit-btn {
+      background: var(--light);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .edit-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .delete-btn {
+      background: var(--light);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+
+    .delete-btn:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--gray-600);
+      font-style: italic;
+      font-size: 1.125rem;
+    }
+
+    .search-box {
+      position: relative;
+      max-width: 400px;
+      margin: 0 auto 2rem;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 1rem 1rem 1rem 3.5rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 1.25rem;
+      font-size: 1.125rem;
+      transition: var(--transition);
+      background: white;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray-600);
+      font-size: 1.25rem;
+    }
+
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 1.5rem 2rem;
+      border-radius: 1.25rem;
+      box-shadow: var(--card-shadow);
+      text-align: center;
+      min-width: 180px;
+    }
+
+    .stat-label {
+      font-size: 1rem;
+      color: var(--gray-600);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .low-stock-count {
+      color: var(--danger) !important;
+    }
+
+    /* Cashier view - hide add product form */
+    .cashier-view .add-product-section {
+      display: none !important;
+    }
+
+    .cashier-message {
+      background: linear-gradient(135deg, #dbeafe, #eff6ff);
+      border: 1px solid #bfdbfe;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .cashier-message i {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+
+    .import-section {
+      margin-top: 1.5rem;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .header { padding: 1.25rem 1.5rem; }
+      .container { margin: 1.5rem auto; padding: 0 1rem; }
+      .page-header h1 { font-size: 2rem; }
+      .page-header p { font-size: 1rem; }
+      .reminders-grid { gap: 1.5rem; }
+      .card { padding: 1.5rem; }
+      .btn { font-size: 1rem; padding: 0.75rem 1.5rem; }
+      .import-section {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+
+    /* Professional Unit Selector Popup */
+    .unit-selector {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border: 2px solid var(--primary);
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+      z-index: 1000;
+      max-width: 400px;
+      width: 90%;
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+    .unit-selector h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .unit-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .unit-option {
+      padding: 0.75rem 1.5rem;
+      background: var(--gray-100);
+      border: 2px solid var(--gray-200);
+      border-radius: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .unit-option:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .unit-option i {
+      width: 24px;
+      height: 24px;
+      background: var(--light);
+      border: 2px solid var(--gray-200);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      color: var(--gray-600);
+    }
+    .unit-option:hover i {
+      background: white;
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .unit-selector-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .cancel-btn {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: var(--transition);
+    }
+    .cancel-btn:hover {
+      background: #dc2626;
+      transform: scale(1.05);
+    }
+
+    /* Reminder Details Modal */
+    .reminder-details-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 2rem;
+    }
+    .reminder-details-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: var(--card-shadow);
+      max-width: 600px;
+      width: 90%;
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .reminder-details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--gray-100);
+    }
+    .reminder-details-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+    .close-btn {
+      background: var(--light);
+      color: var(--dark);
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+    .close-btn:hover {
+      background: var(--danger);
+      color: white;
+      transform: rotate(90deg);
+    }
+    .reminder-details-body {
+      margin-bottom: 2rem;
+    }
+    .reminder-details-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .reminder-details-label {
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+    .reminder-details-value {
+      font-weight: 600;
+      color: var(--dark);
+    }
+    .reminder-details-footer {
+      display: flex;
+      gap: 1rem;
+    }
+    .mark-complete-btn {
+      background: var(--success);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: var(--transition);
+      flex: 1;
+    }
+    .mark-complete-btn:hover {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <i class="fas fa-bell"></i>
+      <h1>Reminders</h1>
+    </div>
+    <div class="live-time" id="liveTime">Loading...</div>
+    <a href="dashboard.html" class="back-btn">
+      <i class="fas fa-arrow-left"></i> Dashboard
+    </a>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1><i class="fas fa-bell"></i> Task & Payment Reminders</h1>
+      <p>Never miss a payment or purchase again — set reminders for clients, suppliers, or yourself</p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-label">Total Reminders</div>
+        <div class="stat-value" id="totalReminders">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" id="pendingReminders">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Overdue</div>
+        <div class="stat-value low-stock-count" id="overdueReminders">0</div>
+      </div>
+    </div>
+
+    <div class="reminders-layout">
+      <!-- Add Reminder Section -->
+      <div class="card add-product-section">
+        <div class="card-header">
+          <i class="fas fa-plus-circle"></i>
+          <h2>Add New Reminder</h2>
+        </div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="reminderTitle">Title *</label>
+            <input type="text" id="reminderTitle" class="form-control" placeholder="e.g., Buy 10 bags of rice">
+          </div>
+          <div class="form-group">
+            <label for="reminderDescription">Description</label>
+            <textarea id="reminderDescription" class="form-control" rows="3" placeholder="What needs to be done?"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="reminderType">Type *</label>
+            <select id="reminderType" class="form-control">
+              <option value="task">Task</option>
+              <option value="payment">Payment</option>
+              <option value="client">Client Payment</option>
+              <option value="supplier">Supplier Payment</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="reminderDate">Due Date *</label>
+            <input type="date" id="reminderDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="reminderTime">Due Time</label>
+            <input type="time" id="reminderTime" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="reminderPriority">Priority</label>
+            <select id="reminderPriority" class="form-control">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="reminderClient">Client/Supplier Name (Optional)</label>
+            <input type="text" id="reminderClient" class="form-control" placeholder="e.g., John Doe">
+          </div>
+          <div class="form-group">
+            <label for="reminderAmount">Amount (If Payment)</label>
+            <input type="number" id="reminderAmount" class="form-control" placeholder="0.00" step="0.01" min="0">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addReminder()">
+          <i class="fas fa-save"></i> Save Reminder
+        </button>
+      </div>
+
+      <!-- Reminders List -->
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-list"></i>
+          <h2>Upcoming Reminders</h2>
+        </div>
+        
+        <div class="search-box">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="remindersSearch" placeholder="Search reminders..." oninput="filterReminders()">
+        </div>
+        
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all" onclick="setReminderFilter('all')">All</button>
+          <button class="filter-btn" data-filter="today" onclick="setReminderFilter('today')">Today</button>
+          <button class="filter-btn" data-filter="upcoming" onclick="setReminderFilter('upcoming')">Upcoming</button>
+          <button class="filter-btn" data-filter="overdue" onclick="setReminderFilter('overdue')">Overdue</button>
+          <button class="filter-btn" data-filter="completed" onclick="setReminderFilter('completed')">Completed</button>
+        </div>
+        
+        <div class="table-container">
+          <table id="remindersTable">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        
+        <div class="import-section" id="importExportSection">
+          <button class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent), #d97706);" onclick="exportReminders()">
+            <i class="fas fa-file-export"></i> Export Reminders
+          </button>
+          <button class="btn btn-primary" onclick="importReminders()">
+            <i class="fas fa-file-import"></i> Import CSV
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // UNIVERSAL SESSION VALIDATION
+    function validateSession() {
+      const currentShopId = sessionStorage.getItem('currentShopId');
+      const currentUserRole = sessionStorage.getItem('currentUserRole');
+      const currentUserEmail = sessionStorage.getItem('currentUserEmail');
+      const currentCurrency = sessionStorage.getItem('currentCurrency');
+      
+      if (!currentShopId || !currentUserRole || !currentUserEmail || !currentCurrency) {
+        alert('Please log in first.');
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      const shopData = JSON.parse(localStorage.getItem(currentShopId));
+      if (!shopData) {
+        alert('Shop data not found. Please log in again.');
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      window.currentShopId = currentShopId;
+      window.currentUserRole = currentUserRole;
+      window.currentUserEmail = currentUserEmail;
+      window.currentCurrency = currentCurrency;
+      window.shopData = shopData;
+      
+      // Initialize reminders if it doesn't exist
+      if (!window.shopData.reminders) {
+        window.shopData.reminders = [];
+        saveShopData();
+      }
+      
+      return true;
+    }
+    
+    function saveShopData() {
+      localStorage.setItem(window.currentShopId, JSON.stringify(window.shopData));
+    }
+    
+    function getCurrencySymbol() {
+      return window.currentCurrency || '₵';
+    }
+    
+    function addAuditLog(user, action, itemType, itemName, details) {
+      const auditLog = window.shopData.auditLog || [];
+      
+      auditLog.push({
+        timestamp: new Date().toISOString(),
+        user: user,
+        action: action,
+        itemType: itemType,
+        itemName: itemName,
+        details: details,
+        ipAddress: '127.0.0.1'
+      });
+      
+      window.shopData.auditLog = auditLog;
+      saveShopData();
+    }
+    
+    if (!validateSession()) {
+      throw new Error('Session validation failed');
+    }
+
+    // Live time (Accra)
+    function updateClock() {
+      const now = new Date();
+      const options = { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        timeZone: 'Africa/Accra'
+      };
+      document.getElementById('liveTime').innerText = now.toLocaleString('en-GB', options);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Load reminders
+    function loadReminders() {
+      const searchTerm = document.getElementById('remindersSearch').value.toLowerCase();
+      let reminders = window.shopData.reminders || [];
+      
+      const filtered = reminders.filter(reminder => 
+        reminder.title.toLowerCase().includes(searchTerm)
+      );
+
+      const tbody = document.querySelector('#remindersTable tbody');
+      tbody.innerHTML = '';
+
+      // Update stats
+      document.getElementById('totalReminders').innerText = reminders.length;
+      document.getElementById('currencySymbol').innerText = getCurrencySymbol();
+      
+      const now = new Date();
+      const pendingReminders = reminders.filter(r => !r.completed && new Date(r.dueDate + 'T' + (r.dueTime || '00:00')) > now);
+      const overdueReminders = reminders.filter(r => !r.completed && new Date(r.dueDate + 'T' + (r.dueTime || '00:00')) < now);
+      
+      document.getElementById('pendingReminders').innerText = pendingReminders.length;
+      document.getElementById('overdueReminders').innerText = overdueReminders.length;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="no-data">No reminders found. Add your first reminder!</td></tr>`;
+        return;
+      }
+
+      filtered.forEach((reminder, index) => {
+        // Find the actual index in the full reminders array for actions
+        const actualIndex = reminders.findIndex(r => r.id === reminder.id);
+        
+        const isOverdue = !reminder.completed && new Date(reminder.dueDate + 'T' + (reminder.dueTime || '00:00')) < now;
+        const isToday = new Date(reminder.dueDate).toDateString() === now.toDateString();
+        const status = reminder.completed ? 'Completed' : (isOverdue ? 'Overdue' : (isToday ? 'Today' : 'Pending'));
+        const statusClass = reminder.completed ? 'completed' : (isOverdue ? 'stock-low' : (isToday ? 'pending' : 'pending'));
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>
+            <div class="product-name">${escapeHtml(reminder.title)}</div>
+            <div class="product-details">
+              <span class="product-price">${reminder.description ? escapeHtml(reminder.description.substring(0, 30)) + (reminder.description.length > 30 ? '...' : '') : ''}</span>
+            </div>
+          </td>
+          <td>${escapeHtml(reminder.type)}</td>
+          <td>${escapeHtml(reminder.dueDate)} ${reminder.dueTime ? escapeHtml(reminder.dueTime) : ''}</td>
+          <td class="${statusClass}">${status}</td>
+          <td class="actions">
+            <button class="action-btn edit-btn" onclick="showReminderDetails(${actualIndex})">
+              <i class="fas fa-eye"></i> View
+            </button>
+            ${!reminder.completed ? `
+              <button class="action-btn edit-btn" onclick="toggleComplete(${actualIndex})">
+                <i class="fas fa-check"></i> Complete
+              </button>
+            ` : ''}
+            <button class="action-btn delete-btn" onclick="deleteReminder(${actualIndex})">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Filter reminders
+    function filterReminders() {
+      loadReminders();
+    }
+
+    // Set reminder filter
+    function setReminderFilter(filter) {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      loadReminders();
+    }
+
+    // Add reminder (Admin only)
+    async function addReminder() {
+      if (window.currentUserRole !== 'admin') {
+        alert('Only admin can add reminders!');
+        return;
+      }
+      
+      const title = document.getElementById('reminderTitle').value.trim();
+      const description = document.getElementById('reminderDescription').value.trim();
+      const type = document.getElementById('reminderType').value;
+      const date = document.getElementById('reminderDate').value;
+      const time = document.getElementById('reminderTime').value;
+      const priority = document.getElementById('reminderPriority').value;
+      const client = document.getElementById('reminderClient').value.trim();
+      const amount = parseFloat(document.getElementById('reminderAmount').value);
+
+      if (!title) { alert('Reminder title is required!'); return; }
+      if (!date) { alert('Due date is required!'); return; }
+
+      let reminders = window.shopData.reminders || [];
+      
+      reminders.push({
+        id: Date.now().toString(),
+        title,
+        description: description || undefined,
+        type,
+        dueDate: date,
+        dueTime: time || undefined,
+        priority: priority || 'low',
+        client: client || undefined,
+        amount: amount || undefined,
+        completed: false,
+        createdAt: new Date().toISOString()
+      });
+
+      window.shopData.reminders = reminders;
+      saveShopData();
+      alert('✅ Reminder added successfully!');
+      
+      document.getElementById('reminderTitle').value = '';
+      document.getElementById('reminderDescription').value = '';
+      document.getElementById('reminderType').value = 'task';
+      document.getElementById('reminderDate').value = '';
+      document.getElementById('reminderTime').value = '';
+      document.getElementById('reminderPriority').value = 'low';
+      document.getElementById('reminderClient').value = '';
+      document.getElementById('reminderAmount').value = '';
+      
+      loadReminders();
+      
+      addAuditLog(window.currentUserEmail, 'add', 'Reminder', title, `Type: ${type}, Due: ${date} ${time || ''}`);
+    }
+
+    // Show reminder details
+    function showReminderDetails(index) {
+      let reminders = window.shopData.reminders || [];
+      const reminder = reminders[index];
+      if (!reminder) {
+          alert('Reminder not found.');
+          return;
+      }
+
+      const modal = document.createElement('div');
+      modal.className = 'reminder-details-modal';
+      modal.innerHTML = `
+        <div class="reminder-details-content">
+          <div class="reminder-details-header">
+            <div class="reminder-details-title">${escapeHtml(reminder.title)}</div>
+            <button class="close-btn" onclick="this.closest('.reminder-details-modal').remove()">×</button>
+          </div>
+          <div class="reminder-details-body">
+            <div class="reminder-details-row">
+              <div class="reminder-details-label">Description:</div>
+              <div class="reminder-details-value">${escapeHtml(reminder.description || 'N/A')}</div>
+            </div>
+            <div class="reminder-details-row">
+              <div class="reminder-details-label">Type:</div>
+              <div class="reminder-details-value">${escapeHtml(reminder.type)}</div>
+            </div>
+            <div class="reminder-details-row">
+              <div class="reminder-details-label">Due Date:</div>
+              <div class="reminder-details-value">${escapeHtml(reminder.dueDate)} ${reminder.dueTime ? escapeHtml(reminder.dueTime) : ''}</div>
+            </div>
+            <div class="reminder-details-row">
+              <div class="reminder-details-label">Priority:</div>
+              <div class="reminder-details-value">${escapeHtml(reminder.priority)}</div>
+            </div>
+            ${reminder.client ? `
+              <div class="reminder-details-row">
+                <div class="reminder-details-label">Client/Supplier:</div>
+                <div class="reminder-details-value">${escapeHtml(reminder.client)}</div>
+              </div>
+            ` : ''}
+            ${reminder.amount ? `
+              <div class="reminder-details-row">
+                <div class="reminder-details-label">Amount:</div>
+                <div class="reminder-details-value">${getCurrencySymbol()}${reminder.amount.toFixed(2)}</div>
+              </div>
+            ` : ''}
+            <div class="reminder-details-row">
+              <div class="reminder-details-label">Status:</div>
+              <div class="reminder-details-value">${reminder.completed ? 'Completed' : 'Pending'}</div>
+            </div>
+          </div>
+          <div class="reminder-details-footer">
+            ${!reminder.completed ? `
+              <button class="mark-complete-btn" onclick="toggleComplete(${index}); this.closest('.reminder-details-modal').remove();">
+                <i class="fas fa-check"></i> Mark as Completed
+              </button>
+            ` : ''}
+            <button class="btn" style="background: var(--light); color: var(--dark);" onclick="this.closest('.reminder-details-modal').remove()">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    // Toggle reminder completion
+    function toggleComplete(index) {
+      if (window.currentUserRole !== 'admin') {
+        alert('Only admin can complete reminders!');
+        return;
+      }
+      
+      let reminders = window.shopData.reminders || [];
+      const reminder = reminders[index];
+      if (!reminder) {
+          alert('Reminder not found.');
+          return;
+      }
+      
+      reminder.completed = !reminder.completed;
+      window.shopData.reminders = reminders;
+      saveShopData();
+      
+      loadReminders();
+      
+      addAuditLog(window.currentUserEmail, 'edit', 'Reminder', reminder.title, `Marked as ${reminder.completed ? 'completed' : 'incomplete'}`);
+    }
+
+    // Delete reminder
+    function deleteReminder(index) {
+      if (window.currentUserRole !== 'admin') {
+        alert('Only admin can delete reminders!');
+        return;
+      }
+      
+      if (!confirm('Are you sure you want to delete this reminder? This cannot be undone!')) return;
+      
+      let reminders = window.shopData.reminders || [];
+      const deletedReminder = reminders[index];
+      if (!deletedReminder) {
+          alert('Reminder not found.');
+          return;
+      }
+      
+      reminders.splice(index, 1);
+      window.shopData.reminders = reminders;
+      saveShopData();
+      loadReminders();
+      
+      addAuditLog(window.currentUserEmail, 'delete', 'Reminder', deletedReminder.title, 'Reminder deleted');
+    }
+
+    // Export reminders
+    function exportReminders() {
+      const reminders = window.shopData.reminders || [];
+      if (reminders.length === 0) {
+        alert('No reminders to export!');
+        return;
+      }
+      
+      const exportData = reminders.map(reminder => ({
+        Title: reminder.title,
+        Description: reminder.description || '',
+        Type: reminder.type,
+        DueDate: reminder.dueDate,
+        DueTime: reminder.dueTime || '',
+        Priority: reminder.priority,
+        Client: reminder.client || '',
+        Amount: reminder.amount || '',
+        Completed: reminder.completed ? 'Yes' : 'No',
+        CreatedAt: reminder.createdAt
+      }));
+      
+      const csv = convertToCSV(exportData);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('hidden', '');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'jelvin-pos-reminders.csv');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Import reminders
+    function importReminders() {
+      if (window.currentUserRole !== 'admin') {
+        alert('Only admin can import reminders!');
+        return;
+      }
+      
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            const csv = e.target.result;
+            if (!csv.trim()) {
+              alert('CSV file is empty!');
+              return;
+            }
+            
+            const reminders = parseCSV(csv);
+            
+            if (reminders.length === 0) {
+              alert('No valid reminders found in CSV file!');
+              return;
+            }
+            
+            let inventory = window.shopData.reminders || [];
+            let added = 0;
+            let skipped = 0;
+            let errors = [];
+            
+            reminders.forEach((reminder, index) => {
+              if (!reminder.Title || !reminder.DueDate) {
+                errors.push(`Row ${index + 2}: Missing required fields`);
+                return;
+              }
+              
+              const exists = inventory.find(r => r.title === reminder.Title && r.dueDate === reminder.DueDate);
+              if (exists) {
+                skipped++;
+                return;
+              }
+              
+              inventory.push({
+                id: Date.now().toString() + index,
+                title: reminder.Title,
+                description: reminder.Description || undefined,
+                type: reminder.Type || 'task',
+                dueDate: reminder.DueDate,
+                dueTime: reminder.DueTime || undefined,
+                priority: reminder.Priority || 'low',
+                client: reminder.Client || undefined,
+                amount: reminder.Amount ? parseFloat(reminder.Amount) : undefined,
+                completed: reminder.Completed === 'Yes',
+                createdAt: reminder.CreatedAt || new Date().toISOString()
+              });
+              added++;
+            });
+            
+            window.shopData.reminders = inventory;
+            saveShopData();
+            loadReminders();
+            
+            let message = `✅ Import complete!\n- Added: ${added} reminders\n- Skipped (duplicates): ${skipped}`;
+            if (errors.length > 0) {
+              message += `\n- Errors: ${errors.length} rows skipped`;
+              console.warn('Import errors:', errors);
+            }
+            alert(message);
+            
+          } catch (err) {
+            console.error('Import error:', err);
+            alert('Failed to import CSV. Please check file format.');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    // Parse CSV
+    function parseCSV(csv) {
+      const lines = csv.split('\n').filter(line => line.trim() !== '' && !line.startsWith('#'));
+      if (lines.length < 2) return [];
+      
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const reminders = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line === '') continue;
+        
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let j = 0; j < line.length; j++) {
+          const char = line[j];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim().replace(/^"|"$/g, ''));
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim().replace(/^"|"$/g, ''));
+        
+        if (values.length === headers.length) {
+          const reminder = {};
+          headers.forEach((header, idx) => {
+            reminder[header] = values[idx];
+          });
+          reminders.push(reminder);
+        }
+      }
+      
+      return reminders;
+    }
+
+    // Convert to CSV
+    function convertToCSV(objArray) {
+      const array = typeof objArray !== 'object' ? JSON.parse(objArray) : objArray;
+      let str = '';
+
+      const headers = Object.keys(array[0]);
+      str += headers.join(',') + '\r\n';
+
+      for (let i = 0; i < array.length; i++) {
+        let line = '';
+        for (let index in array[i]) {
+          if (line !== '') line += ',';
+          let value = String(array[i][index]);
+          // Escape double quotes by doubling them
+          value = value.replace(/"/g, '""');
+          // Quote the field if it contains a comma, newline, or double quote
+          if (/[",\n\r]/.test(value)) {
+            value = `"${value}"`;
+          }
+          line += value;
+        }
+        str += line + '\r\n';
+      }
+      return str;
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    loadReminders();
+    
+    if (window.currentUserRole === 'cashier') {
+      document.querySelector('.add-product-section').style.display = 'none';
+      document.getElementById('importExportSection').innerHTML = `
+        <button class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent), #d97706);" onclick="exportReminders()">
+          <i class="fas fa-file-export"></i> Export Reminders
+        </button>
+      `;
+    }
+  </script>
+  <div id="currencySymbol" style="display:none;">₵</div>
+</body>
+</html>

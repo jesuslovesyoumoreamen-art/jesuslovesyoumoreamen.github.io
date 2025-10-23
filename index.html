@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - JELVIN POS</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css  ">
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('Service Worker registered'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+    .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #3a56e4; }
+    .error { color: #e74c3c; margin-top: 10px; padding: 10px; background: #fadbd8; border-radius: 5px; display: none; }
+    .success { color: #27ae60; background: #d5f5e3; }
+    .login-section { display: none; }
+    .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; }
+    .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; color: #666; }
+    .tab.active { color: #4361ee; border-bottom: 3px solid #4361ee; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('setup')">🚀 Setup</div>
+      <div class="tab" onclick="switchTab('login')">🔐 Login</div>
+    </div>
+
+    <!-- Setup Form -->
+    <div id="setupSection" class="tab-content active">
+      <h2>🚀 Setup JELVIN POS</h2>
+      <div class="form-group">
+        <label>Shop Name</label>
+        <input type="text" id="shopName" placeholder="e.g., Yaw's Shop">
+      </div>
+      <div class="form-group">
+        <label>Currency</label>
+        <select id="currency">
+          <option value="₵">Ghana Cedi (₵)</option>
+          <option value="$">US Dollar ($)</option>
+          <option value="€">Euro (€)</option>
+          <option value="£">British Pound (£)</option>
+          <option value="₦">Nigerian Naira (₦)</option>
+          <option value="KSh">Kenyan Shilling (KSh)</option>
+          <option value="R">South African Rand (R)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Admin Email</label>
+        <input type="email" id="adminEmail" placeholder="admin@yourshop.com">
+      </div>
+      <div class="form-group">
+        <label>Admin Password</label>
+        <input type="password" id="adminPassword" placeholder="Min 8 characters">
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Confirm password">
+      </div>
+      <button onclick="setupAdmin()">Create Admin Account</button>
+      <div id="setupMessage" class="error"></div>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginSection" class="tab-content">
+      <h2>🔐 Login to JELVIN POS</h2>
+      <div class="form-group">
+        <label>Shop Email</label>
+        <input type="email" id="loginEmail" placeholder="Enter your shop email">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password">
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="radio" name="loginRole" value="admin" checked> Admin
+        </label>
+        <label style="margin-left: 15px;">
+          <input type="radio" name="loginRole" value="cashier"> Cashier
+        </label>
+      </div>
+      <button onclick="login()">Login</button>
+      <div id="loginMessage" class="error"></div>
+    </div>
+  </div>
+
+  <script>
+    // Hash password using Web Crypto API
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Generate unique shop ID
+    function generateShopId() {
+      return 'shop_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    }
+
+    // Switch between tabs
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      
+      if (tab === 'setup') {
+        document.querySelector('.tab:nth-child(1)').classList.add('active');
+        document.getElementById('setupSection').classList.add('active');
+      } else {
+        document.querySelector('.tab:nth-child(2)').classList.add('active');
+        document.getElementById('loginSection').classList.add('active');
+      }
+    }
+
+    // Setup admin account
+    async function setupAdmin() {
+      const shopName = document.getElementById('shopName').value.trim();
+      const currency = document.getElementById('currency').value;
+      const email = document.getElementById('adminEmail').value.trim();
+      const password = document.getElementById('adminPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const messageDiv = document.getElementById('setupMessage');
+      
+      messageDiv.className = 'error';
+      messageDiv.style.display = 'none';
+      
+      if (!shopName || !email || !password) {
+        showMessage('All fields are required!', 'error', messageDiv);
+        return;
+      }
+      
+      if (password.length < 8) {
+        showMessage('Password must be at least 8 characters!', 'error', messageDiv);
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        showMessage('Passwords do not match!', 'error', messageDiv);
+        return;
+      }
+      
+      try {
+        // Check if email already exists as admin in any shop
+        const allKeys = Object.keys(localStorage);
+        const existingShop = allKeys.find(key => 
+          key.startsWith('shop_') && 
+          JSON.parse(localStorage.getItem(key)).adminEmail === email
+        );
+        
+        if (existingShop) {
+          showMessage('Email already registered! Please login instead.', 'error', messageDiv);
+          return;
+        }
+        
+        const hashedPassword = await hashPassword(password);
+        const shopId = generateShopId();
+        
+        // Create isolated shop data
+        const shopData = {
+          shopId: shopId,
+          shopName: shopName,
+          currency: currency,
+          adminEmail: email,
+          adminPassword: hashedPassword,
+          cashiers: [],
+          inventory: [],
+          salesLog: [],
+          auditLog: [],
+          systemInitialized: true,
+          createdAt: new Date().toISOString()
+        };
+        
+        // Save shop data with unique key
+        localStorage.setItem(shopId, JSON.stringify(shopData));
+        
+        // Save current shop ID for session
+        sessionStorage.setItem('currentShopId', shopId);
+        sessionStorage.setItem('currentUserRole', 'admin');
+        sessionStorage.setItem('currentUserEmail', email);
+        sessionStorage.setItem('currentCurrency', currency);
+        
+        showMessage('✅ JELVIN POS setup complete! Redirecting to dashboard...', 'success', messageDiv);
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 2000);
+        
+      } catch (err) {
+        console.error('Setup error:', err);
+        showMessage('Failed to setup: ' + err.message, 'error', messageDiv);
+      }
+    }
+    
+    // Login function
+    async function login() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const role = document.querySelector('input[name="loginRole"]:checked').value;
+      const messageDiv = document.getElementById('loginMessage');
+      
+      messageDiv.className = 'error';
+      messageDiv.style.display = 'none';
+      
+      if (!email || !password) {
+        showMessage('Please enter email and password!', 'error', messageDiv);
+        return;
+      }
+      
+      try {
+        // Find shop by admin email OR cashier email
+        const allKeys = Object.keys(localStorage);
+        let shopId = null;
+        let shopData = null;
+        
+        for (const key of allKeys) {
+          if (key.startsWith('shop_')) {
+            const data = JSON.parse(localStorage.getItem(key));
+            // Check admin email
+            if (data.adminEmail === email) {
+              shopId = key;
+              shopData = data;
+              break;
+            }
+            // Check cashier emails if role is cashier
+            if (role === 'cashier') {
+              const cashier = data.cashiers.find(c => c.email === email && c.active);
+              if (cashier) {
+                shopId = key;
+                shopData = data;
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!shopData) {
+          showMessage('Email not found! Please create an account first.', 'error', messageDiv);
+          return;
+        }
+        
+        if (role === 'admin') {
+          const hashedPassword = await hashPassword(password);
+          if (hashedPassword === shopData.adminPassword) {
+            // Save current shop ID for session
+            sessionStorage.setItem('currentShopId', shopId);
+            sessionStorage.setItem('currentUserRole', 'admin');
+            sessionStorage.setItem('currentUserEmail', email);
+            sessionStorage.setItem('currentCurrency', shopData.currency);
+            
+            window.location.href = 'dashboard.html';
+            return;
+          }
+        } else if (role === 'cashier') {
+          const cashier = shopData.cashiers.find(c => c.email === email && c.active);
+          if (cashier) {
+            const hashedPassword = await hashPassword(password);
+            if (hashedPassword === cashier.password) {
+              // Save current shop ID for session
+              sessionStorage.setItem('currentShopId', shopId);
+              sessionStorage.setItem('currentUserRole', 'cashier');
+              sessionStorage.setItem('currentUserEmail', email);
+              sessionStorage.setItem('currentCurrency', shopData.currency);
+              
+              window.location.href = 'sales.html';
+              return;
+            }
+          }
+        }
+        
+        showMessage('Invalid email, password, or role!', 'error', messageDiv);
+      } catch (err) {
+        console.error('Login error:', err);
+        showMessage('Login failed: ' + err.message, 'error', messageDiv);
+      }
+    }
+    
+    function showMessage(text, type, element) {
+      element.innerText = text;
+      element.className = type;
+      element.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - JELVIN POS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('Service Worker registered'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #0f172a;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --light: #f8fafc;
+      --dark: #0f172a;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-600: #475569;
+      --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--accent), #d97706);
+      color: white;
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo h1 {
+      font-weight: 800;
+      font-size: 1.75rem;
+      letter-spacing: -0.025em;
+    }
+
+    .live-time {
+      font-size: 1.125rem;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+
+    .back-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: var(--transition);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(-2px);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .page-header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.025em;
+    }
+
+    .page-header p {
+      color: var(--gray-600);
+      font-size: 1.125rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 2px solid var(--gray-100);
+    }
+
+    .card-header i {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.25rem;
+    }
+
+    .card-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 0.95rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 1rem;
+      font-size: 1rem;
+      transition: var(--transition);
+      background: var(--light);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn {
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1.125rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: var(--transition);
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--accent), #d97706);
+      color: white;
+    }
+
+    .btn-warning:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.4);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger), #dc2626);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+    }
+
+    .data-management {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .data-management {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .about-section {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      box-shadow: var(--card-shadow);
+      margin-top: 2rem;
+    }
+
+    .about-content {
+      line-height: 1.8;
+      color: var(--gray-600);
+    }
+
+    .about-content p {
+      margin-bottom: 1rem;
+    }
+
+    .version-info {
+      background: var(--gray-100);
+      padding: 1rem;
+      border-radius: 1rem;
+      margin-top: 1.5rem;
+      font-family: monospace;
+      font-size: 0.95rem;
+    }
+
+    .security-note {
+      background: linear-gradient(135deg, #fee2e2, #fef2f2);
+      border: 1px solid #fecaca;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      margin-top: 2rem;
+      color: #b91c1c;
+    }
+
+    .security-note i {
+      margin-right: 0.5rem;
+    }
+
+    /* Read-only email styling */
+    .readonly-email {
+      background-color: #f1f5f9 !important;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+      .header { padding: 1.25rem 1.5rem; }
+      .logo h1 { font-size: 1.5rem; }
+      .live-time { font-size: 1rem; }
+      .container { margin: 1.5rem auto; padding: 0 1rem; }
+      .page-header h1 { font-size: 2rem; }
+      .page-header p { font-size: 1rem; }
+      .settings-grid { gap: 1.5rem; }
+      .card { padding: 1.5rem; }
+      .btn { font-size: 1rem; padding: 0.75rem 1.5rem; }
+      .data-management {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <i class="fas fa-cog"></i>
+      <h1>System Settings</h1>
+    </div>
+    <div class="live-time" id="liveTime">Loading...</div>
+    <a href="dashboard.html" class="back-btn">
+      <i class="fas fa-arrow-left"></i> Dashboard
+    </a>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1><i class="fas fa-sliders-h"></i> Configure Your POS</h1>
+      <p>Manage your shop settings, payment methods, and system preferences</p>
+    </div>
+
+    <div class="settings-grid">
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-store"></i>
+          <h2>Shop Settings</h2>
+        </div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="shopName">Shop Name</label>
+            <input type="text" id="shopName" class="form-control" placeholder="e.g., Ama's Grocery">
+          </div>
+          <div class="form-group">
+            <label for="adminEmail">Admin Email <span style="font-size:0.8em; color:var(--gray-600);">(Read-only)</span></label>
+            <input type="email" id="adminEmail" class="form-control readonly-email" placeholder="you@yourshop.com" readonly>
+          </div>
+          <div class="form-group">
+            <label for="momoNumber">MoMo Number</label>
+            <input type="text" id="momoNumber" class="form-control" placeholder="e.g., 0241234567">
+          </div>
+          <div class="form-group">
+            <label for="currencySymbol">Currency Symbol</label>
+            <select id="currencySymbol" class="form-control">
+              <option value="₵">Cedi (₵)</option>
+              <option value="GH₵">Ghana Cedi (GH₵)</option>
+              <option value="GHS">GHS</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">
+          <i class="fas fa-save"></i> Save Settings
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-shield-alt"></i>
+          <h2>Security & Admin</h2>
+        </div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="currentPassword">Current Password</label>
+            <input type="password" id="currentPassword" class="form-control" placeholder="Enter current password">
+          </div>
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <input type="password" id="newPassword" class="form-control" placeholder="Min 8 characters">
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">Confirm New Password</label>
+            <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm new password">
+          </div>
+        </div>
+        
+        <button class="btn btn-warning" onclick="changePassword()">
+          <i class="fas fa-lock"></i> Change Password
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-database"></i>
+          <h2>Data Management</h2>
+        </div>
+        
+        <p style="color: var(--gray-600); margin-bottom: 1.5rem;">
+          Backup your data regularly to prevent loss. All data is stored locally in your browser.
+        </p>
+        
+        <div class="data-management">
+          <button class="btn btn-primary" onclick="exportAllData()">
+            <i class="fas fa-file-export"></i> Export All Data
+          </button>
+          <button class="btn btn-warning" onclick="importData()">
+            <i class="fas fa-file-import"></i> Import Data
+          </button>
+        </div>
+        
+        <div class="security-note">
+          <i class="fas fa-exclamation-triangle"></i>
+          <strong>Warning:</strong> Clearing all data cannot be undone. Export your data first!
+        </div>
+        
+        <button class="btn btn-danger" style="margin-top: 1.5rem;" onclick="clearAllData()">
+          <i class="fas fa-trash"></i> Clear All Data
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="fas fa-mobile-alt"></i>
+          <h2>Payment Settings</h2>
+        </div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="enableCash" checked> 
+              Enable Cash Payments
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="enableMoMo" checked> 
+              Enable MoMo Payments
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="enableCard" checked> 
+              Enable Card Payments
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="defaultPayment">Default Payment Method</label>
+            <select id="defaultPayment" class="form-control">
+              <option value="Cash">Cash</option>
+              <option value="MoMo">MoMo</option>
+              <option value="Card">Card</option>
+            </select>
+          </div>
+          
+          <!-- CUSTOMER PHONE REQUIREMENT ADDED HERE -->
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="requireCustomerPhone"> 
+              Require customer phone on every sale
+            </label>
+          </div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="savePaymentSettings()">
+          <i class="fas fa-save"></i> Save Payment Settings
+        </button>
+      </div>
+    </div>
+
+    <div class="about-section">
+      <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--dark);">
+        <i class="fas fa-info-circle"></i> About JELVIN POS
+      </h2>
+      
+      <div class="about-content">
+        <p>
+          JELVIN POS is a free, open-source point of sale system built specifically for 
+          Ghanaian small businesses and market sellers. It works 100% offline and stores 
+          all data securely in your browser.
+        </p>
+        <p>
+          This system was designed with Ghanaian market realities in mind, featuring 
+          MoMo integration, Cedi currency support, and offline functionality for areas 
+          with unreliable internet connectivity.
+        </p>
+        <p>
+          <strong>Support:</strong> ghana-pos@example.com<br>
+          <strong>License:</strong> MIT (Free for commercial use)
+        </p>
+      </div>
+      
+      <div class="version-info">
+        <strong>Version:</strong> 1.0.0<br>
+        <strong>Last Updated:</strong> October 2025<br>
+        <strong>Storage:</strong> Local browser storage (localStorage)
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // UNIVERSAL SESSION VALIDATION with improved error handling
+    function validateSession() {
+      const currentShopId = sessionStorage.getItem('currentShopId');
+      const currentUserRole = sessionStorage.getItem('currentUserRole');
+      const currentUserEmail = sessionStorage.getItem('currentUserEmail');
+      const currentCurrency = sessionStorage.getItem('currentCurrency');
+      
+      if (!currentShopId || !currentUserRole || !currentUserEmail || !currentCurrency) {
+        alert('Please log in first.');
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      let shopData = null;
+      try {
+        shopData = JSON.parse(localStorage.getItem(currentShopId));
+      } catch (e) {
+        console.error('Failed to parse shop data:', e);
+        alert('Shop data is corrupted. Please log in again.');
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      if (!shopData) {
+        alert('Shop data not found. Please log in again.');
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      window.currentShopId = currentShopId;
+      window.currentUserRole = currentUserRole;
+      window.currentUserEmail = currentUserEmail;
+      window.currentCurrency = currentCurrency;
+      window.shopData = shopData;
+      
+      return true;
+    }
+    
+    function saveShopData() {
+      try {
+        localStorage.setItem(window.currentShopId, JSON.stringify(window.shopData));
+      } catch (e) {
+        console.error('Failed to save shop data:', e);
+        alert('Failed to save data. Please contact support.');
+      }
+    }
+    
+    function getCurrencySymbol() {
+      return window.currentCurrency || '₵';
+    }
+    
+    function addAuditLog(user, action, itemType, itemName, details) {
+      const auditLog = window.shopData.auditLog || [];
+      
+      auditLog.push({
+        timestamp: new Date().toISOString(),
+        user: user,
+        action: action,
+        itemType: itemType,
+        itemName: itemName,
+        details: details,
+        ipAddress: '127.0.0.1'
+      });
+      
+      window.shopData.auditLog = auditLog;
+      saveShopData();
+    }
+    
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Hash password using Web Crypto API
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    if (!validateSession()) {
+      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:1.5rem;color:red;">Session expired. Redirecting...</div>';
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
+    } else {
+      // Initialize data AFTER validation
+      let cart = [];
+      let currentFilter = 'all';
+      let inventory = window.shopData.inventory || [];
+      let appliedDiscount = null;
+
+      // Live time (Accra)
+      function updateClock() {
+        const now = new Date();
+        const options = { 
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          timeZone: 'Africa/Accra'
+        };
+        document.getElementById('liveTime').innerText = now.toLocaleString('en-GB', options);
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      const liveCartKey = window.currentUserEmail;
+      setInterval(() => {
+        updateLiveCart();
+      }, 10000);
+
+      function updateLiveCart() {
+        const liveCart = window.shopData.liveCart || {};
+        liveCart[liveCartKey] = {
+          cashier: window.currentUserEmail,
+          items: cart.map(item => ({
+            name: item.name,
+            qty: item.qty,
+            price: item.basePrice / (item.packSize || 1),
+            unit: item.unit
+          })),
+          total: calculateSubtotal(),
+          timestamp: new Date().toISOString()
+        };
+        window.shopData.liveCart = liveCart;
+        saveShopData();
+      }
+
+      // Load settings
+      function loadSettings() {
+        document.getElementById('shopName').value = window.shopData.shopName || '';
+        document.getElementById('adminEmail').value = window.shopData.adminEmail || '';
+        document.getElementById('momoNumber').value = window.shopData.momoNumber || '';
+        document.getElementById('currencySymbol').value = window.shopData.currency || '₵';
+        
+        // Load payment settings
+        const enableCash = window.shopData.enableCash !== 'false';
+        const enableMoMo = window.shopData.enableMoMo !== 'false';
+        const enableCard = window.shopData.enableCard !== 'false';
+        const defaultPayment = window.shopData.defaultPayment || 'Cash';
+        
+        document.getElementById('enableCash').checked = enableCash;
+        document.getElementById('enableMoMo').checked = enableMoMo;
+        document.getElementById('enableCard').checked = enableCard;
+        document.getElementById('defaultPayment').value = defaultPayment;
+        
+        // Load customer phone requirement setting
+        const requirePhone = window.shopData.requireCustomerPhone === 'true';
+        document.getElementById('requireCustomerPhone').checked = requirePhone;
+      }
+
+      // Save settings
+      function saveSettings() {
+        const shopName = document.getElementById('shopName').value.trim();
+        const momoNumber = document.getElementById('momoNumber').value.trim();
+        const currency = document.getElementById('currencySymbol').value;
+        
+        if (!shopName) {
+          alert('Shop name is required!');
+          return;
+        }
+        
+        // Validate MoMo number (Ghana format)
+        if (momoNumber && !/^0(24|20|54|55|59|26|27|56|57)\d{7}$/.test(momoNumber)) {
+          alert('Please enter a valid Ghana MoMo number (e.g., 0241234567)');
+          return;
+        }
+        
+        window.shopData.shopName = shopName;
+        window.shopData.momoNumber = momoNumber;
+        window.shopData.currency = currency;
+        saveShopData();
+        
+        alert('✅ Settings saved successfully!');
+      }
+
+      // Change password
+      async function changePassword() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (!currentPassword || !newPassword || !confirmPassword) {
+          alert('All password fields are required!');
+          return;
+        }
+        
+        if (newPassword.length < 8) {
+          alert('New password must be at least 8 characters!');
+          return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+          alert('New passwords do not match!');
+          return;
+        }
+        
+        try {
+          // Verify current password
+          const adminPassword = window.shopData.adminPassword;
+          const currentHash = await hashPassword(currentPassword);
+          
+          if (currentHash !== adminPassword) {
+            alert('Current password is incorrect!');
+            return;
+          }
+          
+          // Hash new password
+          const newHash = await hashPassword(newPassword);
+          window.shopData.adminPassword = newHash;
+          saveShopData();
+          
+          // Clear password fields
+          document.getElementById('currentPassword').value = '';
+          document.getElementById('newPassword').value = '';
+          document.getElementById('confirmPassword').value = '';
+          
+          alert('✅ Password changed successfully!');
+        } catch (err) {
+          console.error('Password change error:', err);
+          alert('Failed to change password. Please try again.');
+        }
+      }
+
+      // Export all data
+      function exportAllData() {
+        const data = {
+          shopName: window.shopData.shopName,
+          adminEmail: window.shopData.adminEmail,
+          momoNumber: window.shopData.momoNumber,
+          adminPassword: window.shopData.adminPassword,
+          inventory: window.shopData.inventory,
+          salesLog: window.shopData.salesLog,
+          cashiers: window.shopData.cashiers,
+          enableCash: window.shopData.enableCash,
+          enableMoMo: window.shopData.enableMoMo,
+          enableCard: window.shopData.enableCard,
+          defaultPayment: window.shopData.defaultPayment,
+          requireCustomerPhone: window.shopData.requireCustomerPhone
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'jelvin-pos-backup.json');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      // Import data
+      function importData() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = e => {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = e => {
+            try {
+              const data = JSON.parse(e.target.result);
+              
+              // Confirm import
+              if (!confirm('This will replace all current data. Continue?')) return;
+              
+              // Restore data
+              if (data.shopName) window.shopData.shopName = data.shopName;
+              if (data.adminEmail) window.shopData.adminEmail = data.adminEmail;
+              if (data.momoNumber) window.shopData.momoNumber = data.momoNumber;
+              if (data.adminPassword) window.shopData.adminPassword = data.adminPassword;
+              if (data.inventory) window.shopData.inventory = data.inventory;
+              if (data.salesLog) window.shopData.salesLog = data.salesLog;
+              if (data.cashiers) window.shopData.cashiers = data.cashiers;
+              if (data.enableCash) window.shopData.enableCash = data.enableCash;
+              if (data.enableMoMo) window.shopData.enableMoMo = data.enableMoMo;
+              if (data.enableCard) window.shopData.enableCard = data.enableCard;
+              if (data.defaultPayment) window.shopData.defaultPayment = data.defaultPayment;
+              if (data.requireCustomerPhone) window.shopData.requireCustomerPhone = data.requireCustomerPhone;
+              
+              saveShopData();
+              alert('✅ Data imported successfully! Reloading...');
+              location.reload();
+            } catch (err) {
+              console.error('Import error:', err);
+              alert('Failed to import data. Invalid file format.');
+            }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      }
+
+      // Clear all data
+      function clearAllData() {
+        if (!confirm('⚠️ This will delete ALL data permanently!\n\nAre you sure you want to continue?')) return;
+        
+        // Clear only current shop data
+        localStorage.removeItem(window.currentShopId);
+        sessionStorage.clear();
+        alert('✅ All data cleared. Redirecting to setup...');
+        window.location.href = 'index.html';
+      }
+
+      // Save payment settings
+      function savePaymentSettings() {
+        window.shopData.enableCash = document.getElementById('enableCash').checked;
+        window.shopData.enableMoMo = document.getElementById('enableMoMo').checked;
+        window.shopData.enableCard = document.getElementById('enableCard').checked;
+        window.shopData.defaultPayment = document.getElementById('defaultPayment').value;
+        
+        // Save customer phone requirement
+        window.shopData.requireCustomerPhone = document.getElementById('requireCustomerPhone').checked ? 'true' : 'false';
+        
+        saveShopData();
+        
+        alert('✅ Payment settings saved successfully!');
+      }
+
+      // Initialize
+      loadSettings();
+    }
+  </script>
+</body>
+</html>
